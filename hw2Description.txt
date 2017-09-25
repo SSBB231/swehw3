@@ -1,0 +1,19 @@
+Names:				Andrew Smith
+							Jimmy D. Bodden Pineda
+Heroku URL:		https://dashboard.heroku.com/apps/stormy-journey-57030
+
+Scenario descriptions:
+							Computed Resources (Retrieved with GET requests)
+							- Average cost per minute in respect to each artist
+							- Percentage explicit tracks per artist
+							- Collection price vs sum of prices per track
+
+							Regulars (GET requests)
+							- Return all artists
+							- Return all tracks by an artist
+
+							Update (PUT, POST, DELETE)
+							- Update
+							- add, or 
+							- delete track list for an artist
+
