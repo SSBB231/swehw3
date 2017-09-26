@@ -11,6 +11,9 @@ let dataset;
 
 //Reference to this app's track manager
 let tManager;
+
+//Global Reference to Year Manager
+let yearManager;
 //=============================== End of Global Variables ===========================================
 
 
@@ -25,8 +28,8 @@ Regulars
 - Return all tracks by an artist
 
 New Resources
-- Retrieve the artist with the most tracks
--
+- Retrieve table of number of tracks per year range
+- Retrieve average collection price
 
 Update
 - Update artist tracks
@@ -140,6 +143,101 @@ class Artist
     }
 }
 
+class YearManager
+{
+    constructor(dataset)
+    {
+        this.minYear = 1000;
+        this.maxYear = 2017;
+        this.yearDx = 10;
+        this.counts = [];
+
+        this.updateStats(dataset);
+    }
+
+    getYearFromDateString(date)
+    {
+        return new Date(date).getFullYear();
+    }
+
+    getMinYearMaxYear(dataset)
+    {
+        let min = 2017;
+        let max = 0;
+
+        for(let track of dataset.results)
+        {
+            let year = this.getYearFromDateString(track.releaseDate);
+            if(year < min)
+            {
+                min = year;
+            }
+            if(year > max)
+            {
+                max = year;
+            }
+        }
+
+        return {min: min, max: max};
+    }
+
+    getDisplayString()
+    {
+        let string = this.toString();
+        return new Promise((resolve, reject)=>
+        {
+            if(string === undefined)
+            {
+                reject("NO STRING");
+            }
+            else
+            {
+                resolve(string);
+            }
+        });
+    }
+
+    toString()
+    {
+        let string = "";
+
+        let bin = 0;
+        let i;
+        for(i = this.minYear; i <= this.maxYear-this.yearDx; i+=this.yearDx)
+        {
+            string+= `${i.toFixed(0)}-${(i+this.yearDx).toFixed(0)}: ${this.counts.pop().toFixed(0)}\n`;
+            bin++;
+        }
+
+        return string;
+    }
+
+    updateStats(dataset)
+    {
+        let years = this.getMinYearMaxYear(dataset);
+        this.minYear = years.min;
+        this.maxYear = years.max;
+        this.yearDx = ((this.maxYear-this.minYear)/10);
+
+        console.log(`minYear: ${this.minYear}, maxYear: ${this.maxYear}, yearDx: ${this.yearDx}\n${this.maxYear-this.minYear}`);
+
+        let i;
+        for(i = this.minYear; i <= this.maxYear-this.yearDx; i+=this.yearDx)
+        {
+            let counter = 0;
+            for(let track of dataset.results)
+            {
+                let year = this.getYearFromDateString(track.releaseDate);
+                if(year < (i+this.yearDx) && year >= i)
+                {
+                    counter++;
+                }
+            }
+            this.counts.push(counter);
+        }
+    }
+}
+
 //================================ End of Class Declarations ==========================================
 
 
@@ -217,8 +315,15 @@ function retrieveDataFromServer()
 {
     //Get first half of data
     Promise.all([getFirstHalfData(), getSecondHalfData()])
-        .then((res)=>console.log("Retrieved all Data"))
-        .catch(()=>console.log("Failed to Retrieve all Data"));
+        .then((values)=>
+        {
+            console.log("Done");
+            yearManager = new YearManager(dataset);
+        })
+        .catch(()=>
+        {
+            console.log("Not Done");
+        })
 }
 
 //Counts the number of JSON objects contained in this app's cache
@@ -242,7 +347,8 @@ function getFirstHalfData()
             tManager = new TrackManager(dataset);
             tManager.populate();
             countJSON();
-        });
+        })
+        .catch((error)=>console.log("Failed to fetch first half"));
 }
 
 
@@ -277,6 +383,20 @@ router.route('/artists').get(function (req, res)
 {
     res.send(JSON.stringify(tManager.getArtists()));
 });
+
+router.route('/artists/tracks/yearly')
+    .get((req, res) =>
+    {
+        yearManager.getDisplayString()
+            .then((string)=>
+            {
+                res.send(string);
+            })
+            .catch((message)=>
+            {
+                console.log(message);
+            });
+    });
 
 router.route('/artists/:aName').get(function (req, res)
 {
